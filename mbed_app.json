@@ -6,6 +6,28 @@
             "platform.stdio-convert-newlines"           : true,
             "platform.stdio-buffered-serial"            : true,
             "platform.stdio-flush-at-exit"              : true
+        },
+        "SSCI824": {
+            "platform.stdio-baud-rate"                  : 9600,
+            "RCS620S-TX"                                : "dp16",
+            "RCS620S-RX"                                : "dp15"
+        },
+        "LPC1114": {
+            "platform.stdio-baud-rate"                  : 9600,
+            "RCS620S-TX"                                : "dp16",
+            "RCS620S-RX"                                : "dp15"
+        }
+    },
+    "config": {
+        "RCS620S-TX": {
+            "help"      : "RCS620S TX pin name",
+            "value"     : "D1",
+            "macro_name": "RCS620S_TX"
+        },
+        "RCS620S-RX": {
+            "help"      : "RCS620S TX pin name",
+            "value"     : "D0",
+            "macro_name": "RCS620S_RX"
         }
     }
 }

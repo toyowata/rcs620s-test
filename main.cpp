@@ -24,26 +24,38 @@ int readEncryption(uint16_t serviceCode, uint8_t blockNumber, uint8_t *buf);
 void printBalanceLCD(char *card_name, uint32_t *balance);
 
 DigitalOut led(LED1);
-RCS620S rcs620s(D1, D0);
+RCS620S rcs620s(RCS620S_TX, RCS620S_RX);
 
 void parse_history(uint8_t *buf)
 {
-        printf("\n");
         for(int i = 0; i < 16; i++) {
             printf("%02X ", buf[i]);
         }
-        printf("\n\n");
+        printf("\n");
 
         printf("機種種別: ");
         switch (buf[0]) {
             case 0x03:
                 printf("のりこし精算機\n");
                 break;
+            case 0x12:
+                printf("自動券売機\n");
+                break;
             case 0x16:
                 printf("自動改札機\n");
                 break;
+            case 0x17:
+                printf("簡易改札機\n");
+                break;
+            case 0x18:
+                printf("駅務機器\n");
+                break;
             case 0x46:
                 printf("ビューアルッテ端末\n");
+                break;
+            case 0xc7:
+            case 0xc8:
+                printf("物販端末\n");
                 break;
             default:
                 printf("不明\n");
@@ -61,9 +73,39 @@ void parse_history(uint8_t *buf)
             case 0x03:
                 printf("きっぷ購入\n");
                 break;
+            case 0x07:
+                printf("新規\n");
+                break;
+            case 0x14:
+                printf("オートチャージ\n");
+                break;
+            case 0x46:
+                printf("物販\n");
+                break;
             default:
                 printf("不明\n");
                 break;
+        }
+
+        if (buf[2] != 0) {
+            printf("支払種別: ");
+            switch (buf[2]) {
+                case 0x02:
+                    printf("VIEW\n");
+                    break;
+                case 0x0B:
+                    printf("PiTaPa\n");
+                    break;
+                case 0x0d:
+                    printf("オートチャージ対応PASMO\n");
+                    break;
+                case 0x3f:
+                    printf("モバイルSuica(VIEW決済以外)\n");
+                    break;
+                default:
+                    printf("不明\n");
+                    break;
+            }
         }
 
         printf("処理日付: %d/%02d/%02d\n", 2000+(buf[4]>>1), ((buf[4]&1)<<3 | ((buf[5]&0xe0)>>5)), buf[5]&0xf);
@@ -72,9 +114,11 @@ void parse_history(uint8_t *buf)
         printf("\n");
 }
 
+#if 1
+
 int main()
 {
-    printf("\n*** RCS620S テストプログラム ***\n");
+    printf("\n*** RCS620S テストプログラム ***\n\n");
     rcs620s.initDevice();
 
     while(1) {
@@ -87,14 +131,19 @@ int main()
         if(rcs620s.polling(CYBERNE_SYSTEM_CODE)){
             // Suica PASMO
             if(requestService(PASSNET_SERVICE_CODE)){
-            if(readEncryption(PASSNET_SERVICE_CODE, 0, buf)){
-                // Little Endianで入っているPASSNETの残高を取り出す
-                balance = buf[23];                  // 11 byte目
-                balance = (balance << 8) + buf[22]; // 10 byte目
-                // 残高表示
-                //printBalanceLCD("PASSNET", &balance);
-                parse_history(&buf[12]);
-            }
+                for (int i = 0; i < 20; i++) {
+                    if(readEncryption(PASSNET_SERVICE_CODE, i, buf) && buf[12] != 0){
+#if 0
+                        // Little Endianで入っているPASSNETの残高を取り出す
+                        balance = buf[23];                  // 11 byte目
+                        balance = (balance << 8) + buf[22]; // 10 byte目
+                        // 残高表示
+                        //printBalanceLCD("PASSNET", &balance);
+#else
+                        parse_history(&buf[12]);
+#endif
+                    }
+                }
             }
         }
         
@@ -155,6 +204,39 @@ int main()
         thread_sleep_for(POLLING_INTERVAL);
     }
 }
+#else
+int main() {
+    AnalogIn ain(dp2);
+
+    led = 1;
+    rcs620s.initDevice();
+    rcs620s.timeout = COMMAND_TIMEOUT;
+
+
+    int pool = 1;
+    while(1) {
+        float f = ain.read();
+        //printf("val = %5.2f\n", f);
+        rcs620s.timeout = COMMAND_TIMEOUT;
+        
+        // サイバネ領域
+        if(rcs620s.polling(CYBERNE_SYSTEM_CODE)){
+
+        }
+        pool = (int)(f * 100 + 1);
+        thread_sleep_for(pool);
+        rcs620s.rfOff();
+        thread_sleep_for(pool);
+        /*
+        pool += 10;
+        if (pool > 1000) {
+            pool = 1;
+        }
+        */
+    }
+}
+
+#endif
 
 // request service
 int requestService(uint16_t serviceCode){
