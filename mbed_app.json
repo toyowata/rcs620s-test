@@ -10,12 +10,9 @@
         "SSCI824": {
             "platform.stdio-baud-rate"                  : 9600,
             "RCS620S-TX"                                : "dp16",
-            "RCS620S-RX"                                : "dp15"
-        },
-        "LPC1114": {
-            "platform.stdio-baud-rate"                  : 9600,
-            "RCS620S-TX"                                : "dp16",
-            "RCS620S-RX"                                : "dp15"
+            "RCS620S-RX"                                : "dp15",
+            "AS289R2-TX"                                : "dp17",
+            "AS289R2-RX"                                : "dp18"
         }
     },
     "config": {
@@ -28,6 +25,16 @@
             "help"      : "RCS620S TX pin name",
             "value"     : "D0",
             "macro_name": "RCS620S_RX"
+        },
+        "AS289R2-TX": {
+            "help"      : "AS289R2 TX pin name",
+            "value"     : "D1",
+            "macro_name": "AS289R2_TX"
+        },
+        "AS289R2-RX": {
+            "help"      : "AS289R2 RX pin name",
+            "value"     : "D0",
+            "macro_name": "AS289R2_RX"
         }
     }
 }
