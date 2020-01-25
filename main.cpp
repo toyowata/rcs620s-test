@@ -147,15 +147,23 @@ void parse_history(uint8_t *buf)
         switch (buf[3]) {
             case 0x01:
                 strcat(info, "入場");
+                sprintf(info2, " %02X %02X", buf[6], buf[7]);
+                strcat(info, info2);
                 break;
             case 0x02:
                 strcat(info, "出場");
+                sprintf(info2, " %02X %02X %02X %02X", buf[6], buf[7], buf[8], buf[9]);
+                strcat(info, info2);
                 break;
             case 0x03:
                 strcat(info, "定期入場");
+                sprintf(info2, " %02X %02X", buf[6], buf[7]);
+                strcat(info, info2);
                 break;
             case 0x04:
                 strcat(info, "定期出場");
+                sprintf(info2, " %02X %02X %02X %02X", buf[6], buf[7], buf[8], buf[9]);
+                strcat(info, info2);
                 break;
             case 0x0E:
                 strcat(info, "窓口出場");
@@ -175,13 +183,15 @@ void parse_history(uint8_t *buf)
                 break;
             default:
                 strcat(info, "不明");
+                sprintf(info2, " %02X %02X %02X %02X", buf[6], buf[7], buf[8], buf[9]);
+                strcat(info, info2);
                 break;
         }
         printf("%s\r", info);
         tp.printf("%s\r", info);
     }
 
-    sprintf(info, "処理日付: %d/%02d/%02d", 2000+(buf[4]>>1), ((buf[4]&1)<<3 | ((buf[5]&0xe0)>>5)), buf[5]&0xf);
+    sprintf(info, "処理日付: %d/%02d/%02d", 2000+(buf[4]>>1), ((buf[4]&1)<<3 | ((buf[5]&0xe0)>>5)), buf[5]&0x1f);
     if (buf[1] == 0x46) {   // 物販
         sprintf(info2, " %02d:%02d:%02d", (buf[6] & 0xF8) >> 3, ((buf[6] & 0x7) >> 5) | ((buf[7] & 0xe0) >> 5), (buf[7] & 0x1f));
         strcat(info, info2);
@@ -192,17 +202,22 @@ void parse_history(uint8_t *buf)
 
     sprintf(info, "残額: %d円\r\r", (buf[11]<<8) + buf[10]); 
     printf("%s\n", info);
+    tp.setDoubleSizeWidth();
     tp.printf("%s", info);
+    tp.clearDoubleSizeWidth();
     
 }
 
 int main()
 {
     uint8_t buffer[20][16];
+
+    thread_sleep_for(500);
+    
     printf("\n*** RCS620S テストプログラム ***\n\n");
     rcs620s.initDevice();
     tp.initialize();
-    tp.putLineFeed(2);
+    tp.putLineFeed(1);
 
     while(1) {
         uint32_t balance;
@@ -226,9 +241,6 @@ int main()
                         //printBalanceLCD("PASSNET", &balance);
 #else
                         memcpy(buffer[i], &buf[12], 16);
-                        //parse_history(&buf[12]);
-                        //parse_history(&buffer[i][0]);
-
 #endif
                     }
                 }
