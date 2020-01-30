@@ -3,6 +3,7 @@
 #include "mbed.h"
 #include "RCS620S.h"
 #include "AS289R2.h"
+#include "SB1602E.h"
 
 //#define COMMAND_TIMEOUT  400
 #define PUSH_TIMEOUT    2100
@@ -30,6 +31,7 @@ void printBalanceLCD(const char *card_name, uint32_t *balance);
 DigitalOut led(LED1);
 RCS620S rcs620s(RCS620S_TX, RCS620S_RX);
 AS289R2 tp(AS289R2_TX, AS289R2_RX);
+SB1602E lcd(I2C_SDA, I2C_SCL);
 
 void parse_history(uint8_t *buf)
 {
@@ -211,9 +213,15 @@ void parse_history(uint8_t *buf)
 int main()
 {
     uint8_t buffer[20][16];
+    
+    lcd.setCharsInLine(8);
+    lcd.clear();
+    lcd.contrast(0x35);
+    lcd.printf(0, 0, "FeliCa");
+    lcd.printf(0, 1, "Reader");
 
     thread_sleep_for(500);
-    
+
     printf("\n*** RCS620S テストプログラム ***\n\n");
     rcs620s.initDevice();
     tp.initialize();
@@ -232,7 +240,7 @@ int main()
             if(requestService(PASSNET_SERVICE_CODE)){
                 isCaptured = 1;
                 for (int i = 0; i < 20; i++) {
-                    if(readEncryption(PASSNET_SERVICE_CODE, i, buf) /*&& buf[12] != 0*/){
+                    if(readEncryption(PASSNET_SERVICE_CODE, i, buf)){
 #if 0
                         // Little Endianで入っているPASSNETの残高を取り出す
                         balance = buf[23];                  // 11 byte目
@@ -300,6 +308,12 @@ int main()
         }
         
         if (isCaptured) {
+            // 残高表示
+            balance = buffer[0][11];                  // 11 byte目
+            balance = (balance << 8) + buffer[0][10]; // 10 byte目
+            lcd.clear();
+            lcd.printf(0, 0, "Suica");
+            lcd.printf(0, 1, "\\ %d", balance);
             for (int i = 0; i < PRINT_ENTRIES; i++) {
                 if (buffer[i][0] != 0) {
                     parse_history(&buffer[i][0]);
@@ -363,4 +377,7 @@ int readEncryption(uint16_t serviceCode, uint8_t blockNumber, uint8_t *buf){
 void printBalanceLCD(const char *card_name, uint32_t *balance)
 {
     printf("%s: %ld\n", card_name, *balance);
+    lcd.clear();
+    lcd.printf(0, 0, "%s", card_name);
+    lcd.printf(0, 1, "\\ %d", balance);
 }
