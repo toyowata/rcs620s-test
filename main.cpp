@@ -213,6 +213,7 @@ void parse_history(uint8_t *buf)
 int main()
 {
     uint8_t buffer[20][16];
+    uint8_t idm[8];
     
     lcd.setCharsInLine(8);
     lcd.clear();
@@ -223,9 +224,11 @@ int main()
     thread_sleep_for(500);
 
     printf("\n*** RCS620S テストプログラム ***\n\n");
+    
     rcs620s.initDevice();
     tp.initialize();
     tp.putLineFeed(1);
+    memset(idm, 0, 8);
 
     while(1) {
         uint32_t balance;
@@ -238,7 +241,6 @@ int main()
         if(rcs620s.polling(CYBERNE_SYSTEM_CODE)){
             // Suica PASMO
             if(requestService(PASSNET_SERVICE_CODE)){
-                isCaptured = 1;
                 for (int i = 0; i < 20; i++) {
                     if(readEncryption(PASSNET_SERVICE_CODE, i, buf)){
 #if 0
@@ -251,6 +253,16 @@ int main()
                         memcpy(buffer[i], &buf[12], 16);
 #endif
                     }
+                }
+                if (memcmp(idm, buf+1, 8) != 0) {
+                    // カード変更
+                    isCaptured = 1;
+                    memcpy(idm, buf+1, 8);
+
+                }
+                else {
+                    // 前と同じカード
+                    isCaptured = 0;
                 }
             }
         }
