@@ -61,8 +61,8 @@ private:
 
     int checkTimeout(unsigned long t0);
 
-    RawSerial *_serial_p;
-    RawSerial &_serial;
+    UnbufferedSerial *_serial_p;
+    UnbufferedSerial &_serial;
 
 
 public:

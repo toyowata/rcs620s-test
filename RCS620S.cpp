@@ -12,7 +12,6 @@
 //#include "HardwareSerial.h"
 
 #include "RCS620S.h"
-#include "millis.h"
 
 /* --------------------------------
  * Constant
@@ -41,7 +40,7 @@
  * ------------------------ */
 
 RCS620S::RCS620S(PinName txd, PinName rxd) :
-    _serial_p(new RawSerial(txd, rxd, 115200)), 
+    _serial_p(new UnbufferedSerial(txd, rxd, 115200)), 
     _serial(*_serial_p)
 {
     this->timeout = RCS620S_DEFAULT_TIMEOUT;
@@ -320,25 +319,14 @@ void RCS620S::writeSerial(
     const uint8_t* data,
     uint16_t len)
 {
-//    _serial.write(data, len, 0);
-    for(int i = 0; i < len; i++) {
-        int c = (int)*data;
-        while (1) {
-            if (_serial.writeable()) {
-                _serial.putc(c);
-//                printf("%x ", c);
-                data++;
-                break;
-            }
-        }
-    }
-//    printf("\n");
+    _serial.write(data, len);
 }
 
 int RCS620S::readSerial(
     uint8_t* data,
     uint16_t len)
 {
+#if 0
     uint16_t nread = 0;
 //    unsigned long t0 = millis();
 
@@ -351,7 +339,20 @@ int RCS620S::readSerial(
             nread++;
         }
     }
+#else
+    ssize_t recv, nread = 0;
+    time_t t0 = time(NULL);
 
+    while (nread < len) {
+        if (checkTimeout(t0)) {
+            return 0;
+        }
+        recv = _serial.read(data, len);
+        data += recv;
+        nread += recv;
+    }
+    
+#endif
     return 1;
 }
 
@@ -362,8 +363,7 @@ void RCS620S::flushSerial(void)
 
 int RCS620S::checkTimeout(unsigned long t0)
 {
-    unsigned long t = millis();
-
+    time_t t = time(NULL);
     if ((t - t0) >= this->timeout) {
         return 1;
     }
