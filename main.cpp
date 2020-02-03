@@ -26,7 +26,7 @@
 
 int requestService(uint16_t serviceCode);
 int readEncryption(uint16_t serviceCode, uint8_t blockNumber, uint8_t *buf);
-void printBalanceLCD(const char *card_name, uint32_t *balance);
+void printBalanceLCD(const char *card_name, uint32_t balance);
 
 DigitalOut led(LED1);
 RCS620S rcs620s(RCS620S_TX, RCS620S_RX);
@@ -207,7 +207,6 @@ void parse_history(uint8_t *buf)
     tp.setDoubleSizeWidth();
     tp.printf("%s", info);
     tp.clearDoubleSizeWidth();
-    
 }
 
 int main()
@@ -218,13 +217,12 @@ int main()
     lcd.setCharsInLine(8);
     lcd.clear();
     lcd.contrast(0x35);
-    lcd.printf(0, 0, "FeliCa");
-    lcd.printf(0, 1, "Reader");
+    lcd.printf(0, 0, (char*)"FeliCa");
+    lcd.printf(0, 1, (char*)"Reader");
 
     thread_sleep_for(500);
-
     printf("\n*** RCS620S テストプログラム ***\n\n");
-    
+
     rcs620s.initDevice();
     tp.initialize();
     tp.putLineFeed(1);
@@ -239,7 +237,7 @@ int main()
         
         // サイバネ領域
         if(rcs620s.polling(CYBERNE_SYSTEM_CODE)){
-            // Suica PASMO
+            // Suica or PASMO
             if(requestService(PASSNET_SERVICE_CODE)){
                 for (int i = 0; i < 20; i++) {
                     if(readEncryption(PASSNET_SERVICE_CODE, i, buf)){
@@ -248,7 +246,7 @@ int main()
                         balance = buf[23];                  // 11 byte目
                         balance = (balance << 8) + buf[22]; // 10 byte目
                         // 残高表示
-                        //printBalanceLCD("PASSNET", &balance);
+                        //printBalanceLCD("PASSNET", balance);
 #else
                         memcpy(buffer[i], &buf[12], 16);
 #endif
@@ -276,7 +274,7 @@ int main()
                 balance = buf[26];                  // 14 byte目
                 balance = (balance << 8) + buf[27]; // 15 byte目
                 // 残高表示
-                printBalanceLCD("Edy", &balance);
+                printBalanceLCD("Edy", balance);
             }
             }
             
@@ -289,7 +287,7 @@ int main()
                 balance = (balance << 8) + buf[19]; // 7 byte目
                 balance = (balance << 8) + buf[20]; // 8 byte目
                 // 残高表示
-                printBalanceLCD("nanaco", &balance);
+                printBalanceLCD("nanaco", balance);
             }
             }
             
@@ -303,29 +301,18 @@ int main()
                 balance = balance & 0x7FFFE0;       // 残高18bit分のみ論理積で取り出す
                 balance = balance >> 5;             // 5bit分ビットシフト
                 // 残高表示
-                printBalanceLCD("waon", &balance);
+                printBalanceLCD("waon", balance);
             }
             }
         }
-        
-        // デフォルト表示
-        else{
-/*
-            LCD.clear();
-            LCD.move(0);
-            LCD.print("Touch");
-            LCD.move(0x44);
-            LCD.print("Card");
-*/
-        }
-        
+                
         if (isCaptured) {
-            // 残高表示
+            // 残高表示 (Suica or PASMO)
             balance = buffer[0][11];                  // 11 byte目
             balance = (balance << 8) + buffer[0][10]; // 10 byte目
             lcd.clear();
-            lcd.printf(0, 0, "Suica");
-            lcd.printf(0, 1, "\\ %d", balance);
+            lcd.printf(0, 0, (char*)"Suica");
+            lcd.printf(0, 1, (char*)"\\ %d", balance);
             for (int i = 0; i < PRINT_ENTRIES; i++) {
                 if (buffer[i][0] != 0) {
                     parse_history(&buffer[i][0]);
@@ -386,10 +373,10 @@ int readEncryption(uint16_t serviceCode, uint8_t blockNumber, uint8_t *buf){
     return 1;
 }
 
-void printBalanceLCD(const char *card_name, uint32_t *balance)
+void printBalanceLCD(const char *card_name, uint32_t balance)
 {
-    printf("%s: %ld\n", card_name, *balance);
+    printf("%s: %ld\n", card_name, balance);
     lcd.clear();
-    lcd.printf(0, 0, "%s", card_name);
-    lcd.printf(0, 1, "\\ %d", balance);
+    lcd.printf(0, 0, (char*)"%s", card_name);
+    lcd.printf(0, 1, (char*)"\\ %d", balance);
 }

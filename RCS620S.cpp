@@ -7,9 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
-//#include "Wprogram.h"
-//#include "Print.h"
-//#include "HardwareSerial.h"
 
 #include "RCS620S.h"
 
@@ -44,7 +41,6 @@ RCS620S::RCS620S(PinName txd, PinName rxd) :
     _serial(*_serial_p)
 {
     this->timeout = RCS620S_DEFAULT_TIMEOUT;
-
 }
 
 RCS620S::~RCS620S()
@@ -100,7 +96,7 @@ int RCS620S::polling(uint16_t systemCode)
     buf[6] = (uint8_t)((systemCode >> 0) & 0xff);
 
     ret = rwCommand(buf, 9, response, &responseLen);
-//printf("ret = %d, responseLen = %d\n", ret, responseLen);
+
     if (!ret || (responseLen != 22) ||
         (memcmp(response, "\xd5\x4b\x01\x01\x12\x01", 6) != 0)) {
         return 0;
@@ -326,20 +322,6 @@ int RCS620S::readSerial(
     uint8_t* data,
     uint16_t len)
 {
-#if 0
-    uint16_t nread = 0;
-//    unsigned long t0 = millis();
-
-    while (nread < len) {
-//        if (checkTimeout(t0)) {
-//            return 0;
-//        }
-        if (_serial.readable()) {
-            data[nread] = _serial.getc();
-            nread++;
-        }
-    }
-#else
     ssize_t recv, nread = 0;
     time_t t0 = time(NULL);
 
@@ -352,13 +334,11 @@ int RCS620S::readSerial(
         nread += recv;
     }
     
-#endif
     return 1;
 }
 
 void RCS620S::flushSerial(void)
 {
-    // _serial.flush();
 }
 
 int RCS620S::checkTimeout(unsigned long t0)
