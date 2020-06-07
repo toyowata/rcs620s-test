@@ -35,7 +35,15 @@ SB1602E lcd(I2C_SDA, I2C_SCL);
 
 void parse_history(uint8_t *buf)
 {
-    char info[80], info2[20];
+    char info[80], info2[40];
+    int region_in, region_out, line_in, line_out, station_in, station_out;
+
+    region_in = (buf[0xf] >> 6) & 3;
+    region_out = (buf[0xf] >> 4) & 3;
+    line_in = buf[6];
+    line_out = buf[7];
+    station_in = buf[8];
+    station_out = buf[9];
 
     for(int i = 0; i < 16; i++) {
         printf("%02X ", buf[i]);
@@ -47,8 +55,16 @@ void parse_history(uint8_t *buf)
         case 0x03:
             strcat(info, "のりこし精算機\r");
             break;
+        case 0x05:
+            strcat(info, "バス/路面等\r");
+            break;
+        case 0x07:
+        case 0x08:
         case 0x12:
             strcat(info, "自動券売機\r");
+            break;
+        case 0x14:
+            strcat(info, "駅窓口\r");
             break;
         case 0x15:
             strcat(info, "定期券発売機\r");
@@ -100,13 +116,12 @@ void parse_history(uint8_t *buf)
             strcat(info, "新規\r");
             break;
         case 0x08:
-            strcat(info, "控除\r");
+            strcat(info, "チャージ控除\r");
             break;
+        case 0x0C:
         case 0x0D:
-            strcat(info, "バス\r");
-            break;
         case 0x0F:
-            strcat(info, "バス\r");
+            strcat(info, "バス/路面等\r");
             break;
         case 0x14:
             strcat(info, "オートチャージ\r");
@@ -182,6 +197,13 @@ void parse_history(uint8_t *buf)
                 break;
             case 0x21:
                 strcat(info, "バス等乗継割引");
+                break;
+            case 0x22:
+            case 0x25:
+            case 0x26:
+                strcat(info, "券面外乗降");
+                sprintf(info2, " [%d] %02X %02X [%d] %02X %02X", (buf[0xf] >> 6) & 3, buf[6], buf[7], (buf[0xf] >> 4) & 3, buf[8], buf[9]);
+                strcat(info, info2);
                 break;
             default:
                 strcat(info, "不明");
