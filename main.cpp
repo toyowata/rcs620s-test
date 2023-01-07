@@ -18,11 +18,17 @@
 #define CYBERNE_SYSTEM_CODE           0x0003
 #define COMMON_SYSTEM_CODE            0xFE00
 #define PASSNET_SERVICE_CODE          0x090F
+#define FELICA_ATTRIBUTE_CODE         0x008B
+#define KITACA_SERVICE_CODE           0x208B
+#define TOICA_SERVICE_CODE            0x1E8B
+#define GATE_SERVICE_CODE             0x184B
+#define PASMO_SERVICE_CODE            0x1cc8
+
 #define EDY_SERVICE_CODE              0x170F
 #define NANACO_SERVICE_CODE           0x564F
 #define WAON_SERVICE_CODE             0x680B
 
-#define PRINT_ENTRIES                 10    // Max. 20
+#define PRINT_ENTRIES                 20    // Max. 20
 
 int requestService(uint16_t serviceCode);
 int readEncryption(uint16_t serviceCode, uint8_t blockNumber, uint8_t *buf);
@@ -329,12 +335,41 @@ int main()
         }
                 
         if (isCaptured) {
-            // 残高表示 (Suica or PASMO)
-            balance = buffer[0][11];                  // 11 byte目
-            balance = (balance << 8) + buffer[0][10]; // 10 byte目
-            lcd.clear();
-            lcd.printf(0, 0, (char*)"Suica");
-            lcd.printf(0, 1, (char*)"\\ %d", balance);
+            uint8_t attr[RCS620S_MAX_CARD_RESPONSE_LEN];
+            if (requestService(FELICA_ATTRIBUTE_CODE)) {
+                readEncryption(FELICA_ATTRIBUTE_CODE, 0, attr);
+            }
+
+            // 残高取得
+            balance = attr[12+12];                  // 12 byte目
+            balance = (balance << 8) + attr[12+11]; // 11 byte目
+
+            // カード種別判定
+            char card[8];
+            if ((attr[12+8] & 0xF0) == 0x30) {
+                strcpy(card, "ICOCA");
+            }
+            else {
+                if (requestService(KITACA_SERVICE_CODE)) {
+                    strcpy(card, "Kitaca");
+                }
+                else if (requestService(TOICA_SERVICE_CODE)) {
+                    strcpy(card, "toica");
+                }
+                else if (requestService(GATE_SERVICE_CODE) != 1) {
+                    strcpy(card, "SUGOCA");
+                }
+                else if (requestService(PASMO_SERVICE_CODE)) {
+                    strcpy(card, "PASMO");
+                }                    
+                else {
+                    strcpy(card, "Suica");
+                }
+            }
+            
+            // 残高表示
+            printBalanceLCD(card , balance);
+
             for (int i = 0; i < PRINT_ENTRIES; i++) {
                 if (buffer[i][0] != 0) {
                     parse_history(&buffer[i][0]);
