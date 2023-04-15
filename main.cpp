@@ -15,7 +15,8 @@
 //#define RCS620S_MAX_CARD_RESPONSE_LEN 30
  
 // FeliCa Service/System Code
-#define CYBERNE_SYSTEM_CODE           0x0003
+#define CYBERNE_SYSTEM_CODE           0x0300
+#define SAPICA_SYSTEM_CODE            0x5E86
 #define COMMON_SYSTEM_CODE            0xFE00
 #define PASSNET_SERVICE_CODE          0x090F
 #define FELICA_ATTRIBUTE_CODE         0x008B
@@ -23,6 +24,11 @@
 #define TOICA_SERVICE_CODE            0x1E8B
 #define GATE_SERVICE_CODE             0x184B
 #define PASMO_SERVICE_CODE            0x1cc8
+#define SUGOCA_SERVICE_CODE           0x21c8
+#define PITAPA_SERVICE_CODE           0x1b88
+#define SAPICA_SERVICE_CODE           0xBA4B
+#define SUICA_SERVICE_CODE            0x23CB
+#define MANACA_SERVICE_CODE           0x9888
 
 #define EDY_SERVICE_CODE              0x170F
 #define NANACO_SERVICE_CODE           0x564F
@@ -264,7 +270,8 @@ int main()
         rcs620s.timeout = COMMAND_TIMEOUT;
         
         // サイバネ領域
-        if(rcs620s.polling(CYBERNE_SYSTEM_CODE)){
+        //if(rcs620s.polling(CYBERNE_SYSTEM_CODE)){
+        if (rcs620s.polling(CYBERNE_SYSTEM_CODE) || rcs620s.polling(SAPICA_SYSTEM_CODE)) {
             // Suica or PASMO
             if(requestService(PASSNET_SERVICE_CODE)){
                 for (int i = 0; i < 20; i++) {
@@ -356,14 +363,26 @@ int main()
                 else if (requestService(TOICA_SERVICE_CODE)) {
                     strcpy(card, "toica");
                 }
-                else if (requestService(GATE_SERVICE_CODE) != 1) {
+                else if (requestService(SUGOCA_SERVICE_CODE)) {
                     strcpy(card, "SUGOCA");
+                }
+                else if (requestService(PITAPA_SERVICE_CODE)) {
+                    strcpy(card, "PiTaPa");
                 }
                 else if (requestService(PASMO_SERVICE_CODE)) {
                     strcpy(card, "PASMO");
+                }
+                else if (requestService(SAPICA_SERVICE_CODE)) {
+                    strcpy(card, "SAPICA");
+                }
+                else if (requestService(MANACA_SERVICE_CODE)) {
+                    strcpy(card, "manaca");
+                }
+                else if (requestService(SUICA_SERVICE_CODE)) {
+                    strcpy(card, "Suica");
                 }                    
                 else {
-                    strcpy(card, "Suica");
+                    strcpy(card, "W-Suica");
                 }
             }
             
